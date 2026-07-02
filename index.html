@@ -86,6 +86,27 @@ header.site{position:sticky;top:0;z-index:40;background:rgba(251,247,241,.92);ba
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* Points table */
+/* Duration rule cards */
+.rule-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+.rule-card{flex:1;min-width:240px;background:var(--white);border:1px solid var(--line-soft);border-radius:16px;padding:24px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 10px 26px rgba(0,84,90,.06)}
+.rule-min{font-family:'Lora',serif;font-size:52px;font-weight:600;color:var(--teal-dark);line-height:1}
+.rule-unit{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--warm-gray);font-weight:700}
+.rule-eq{font-family:'Lora',serif;font-size:34px;color:var(--warm-gray);margin:0 4px}
+.rule-pts{font-family:'Lora',serif;font-size:40px;font-weight:600;color:var(--gold);margin-left:auto;line-height:1}
+.rule-pts span{display:block;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--warm-gray);text-align:right}
+/* Workout chips */
+.chip-wrap{display:flex;flex-wrap:wrap;gap:9px}
+.chip{background:var(--white);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:13px;font-weight:600;color:var(--ink)}
+.chip.other{background:var(--teal-light);border-color:#cfe6e8;color:var(--teal-dark)}
+/* Duration toggle in form */
+.dur-toggle{display:flex;gap:10px;margin-bottom:16px}
+.dur-opt{flex:1;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);padding:12px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.dur-opt:hover{border-color:var(--teal)}
+.dur-opt.on{border-color:var(--teal);background:var(--teal-light)}
+.dur-opt .dm{font-family:'Lora',serif;font-weight:600;font-size:20px;color:var(--ink)}
+.dur-opt .dp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--teal);margin-top:2px}
+
+/* Points table (legacy, still used elsewhere) */
 .pts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:38px}
 .pts-card{background:var(--white);border:1px solid var(--line-soft);border-radius:14px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px}
 .pts-card .lab{font-size:14px;font-weight:600;color:var(--ink)}
@@ -349,10 +370,16 @@ footer.site img{width:44px;height:44px;border-radius:11px;margin:0 auto 20px}
     <div class="section-head">
       <span class="b-eyebrow">How it works</span>
       <h2 class="b-display b-display-md">Move your way, <em>earn your points</em></h2>
-      <p class="b-lede">Swimmers, cyclists, runners, yogis, walkers, lifters. Pick whatever movement fits your day. Each 30 or 60 minute block earns points, and consistent weeks earn integrity bonuses.</p>
+      <p class="b-lede">Points are simple and based on time, not the type of workout. Log what you did and how long, and the site scores it.</p>
     </div>
-    <div class="pts-grid" id="ptsGrid"></div>
-    <h3 class="b-display b-display-md" style="font-size:clamp(22px,3vw,30px);margin-top:52px;margin-bottom:6px">Integrity <em>bonuses</em></h3>
+    <div class="rule-row">
+      <div class="rule-card"><div class="rule-min">30</div><div class="rule-unit">minutes</div><div class="rule-eq">=</div><div class="rule-pts">1 <span>point</span></div></div>
+      <div class="rule-card"><div class="rule-min">60</div><div class="rule-unit">minutes</div><div class="rule-eq">=</div><div class="rule-pts">2 <span>points</span></div></div>
+    </div>
+    <h3 class="b-display" style="font-size:clamp(20px,2.6vw,26px);margin-top:44px;margin-bottom:4px">Pick from <em>the list</em></h3>
+    <p class="b-lede" style="margin-bottom:18px">Almost anything counts. Choose the closest match when you log. Not on the list? Pick <b>Something else</b> and type it in yourself, no approval needed.</p>
+    <div class="chip-wrap" id="chipWrap"></div>
+    <h3 class="b-display b-display-md" style="font-size:clamp(22px,3vw,30px);margin-top:48px;margin-bottom:6px">Integrity <em>bonuses</em></h3>
     <p class="b-lede" style="margin-bottom:20px">Showing up on more days each week earns extra. Bonuses are awarded per week, highest tier only.</p>
     <div class="bonus-row">
       <div class="bonus-card"><div class="big" id="b3">+2</div><div class="lab">Move on <b>3 days</b> in a week</div></div>
@@ -403,9 +430,15 @@ footer.site img{width:44px;height:44px;border-radius:11px;margin:0 auto 20px}
       <!-- Right: log form -->
       <div class="panel">
         <h3>Add an activity</h3>
-        <p class="sub">Pick what you did and when. Proof photo optional but encouraged.</p>
+        <p class="sub">Pick what you did and how long. Proof photo optional but encouraged.</p>
         <label class="fld">Activity</label>
-        <select id="fActivity"></select>
+        <select id="fActivity" onchange="app.onActivityChange()"></select>
+        <div id="fOtherWrap" style="display:none">
+          <label class="fld">What did you do?</label>
+          <input type="text" id="fOther" placeholder="Rock wall session, trampoline class, etc.">
+        </div>
+        <label class="fld">How long?</label>
+        <div class="dur-toggle" id="durToggle"></div>
         <label class="fld">Date</label>
         <input type="date" id="fDate">
         <label class="fld">Note (optional)</label>
@@ -419,10 +452,7 @@ footer.site img{width:44px;height:44px;border-radius:11px;margin:0 auto 20px}
         <input type="file" id="fPhoto" accept="image/*" style="display:none">
         <div class="thumb-prev" id="thumbPrev" style="display:none"><img id="thumbImg"><button onclick="app.clearPhoto()">&times;</button></div>
         <button class="btn block" id="logBtn" onclick="app.logActivity()">Add to my log</button>
-        <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)">
-          <p style="font-size:12.5px;color:var(--warm-gray);margin-bottom:8px">Did something that is not on the list?</p>
-          <button class="btn ghost sm" onclick="app.openAppeal()">Submit it to the Crew for review</button>
-        </div>
+        <p style="text-align:center;font-size:12px;color:var(--warm-gray);margin-top:14px">Not on the list? Choose <b>Something else</b> above and log it yourself.</p>
       </div>
     </div>
   </div>
@@ -543,15 +573,38 @@ const CONFIG = {
   organizer: { name: 'JoAnn Lockard', email: 'joannl@arborfg.com' },
   startDate: '2026-07-01',
   endDate:   '2026-07-31',
+  // Points come from DURATION, not the activity: 30 min = 1 pt, 60 min = 2 pts.
+  durations: [
+    { minutes:30, label:'30 minutes', points:1 },
+    { minutes:60, label:'60 minutes', points:2 }
+  ],
+  // Broad pick list so members log anything themselves. "other" lets them type their own.
   activities: [
-    { key:'walk',       label:'30-minute walk',            points:1 },
-    { key:'run',        label:'30-minute run',             points:2 },
-    { key:'bike',       label:'30-minute bike ride',       points:2 },
-    { key:'swim',       label:'30-minute swim',            points:2 },
-    { key:'yoga',       label:'60-minute yoga class',      points:2 },
-    { key:'strength',   label:'Strength training (30+ min)', points:2 },
-    { key:'outdoor',    label:'Outdoor activity (hike, paddleboard, etc.)', points:2 },
-    { key:'pickleball', label:'60 minutes Pickleball',     points:2 }
+    { key:'walk',           label:'Walk' },
+    { key:'run',            label:'Run or jog' },
+    { key:'hike',           label:'Hike' },
+    { key:'bike_out',       label:'Outdoor bike ride' },
+    { key:'spin',           label:'Indoor cycling or spin' },
+    { key:'swim',           label:'Swim' },
+    { key:'yoga',           label:'Yoga' },
+    { key:'pilates',        label:'Pilates' },
+    { key:'strength',       label:'Strength training or weights' },
+    { key:'bodyweight',     label:'Bodyweight workout' },
+    { key:'hiit',           label:'HIIT or bootcamp' },
+    { key:'class',          label:'Group fitness class' },
+    { key:'cardio_machine', label:'Cardio machine (elliptical, stair, treadmill)' },
+    { key:'row',            label:'Rowing' },
+    { key:'pickleball',     label:'Pickleball' },
+    { key:'tennis',         label:'Tennis' },
+    { key:'basketball',     label:'Basketball' },
+    { key:'golf',           label:'Golf (walking the course)' },
+    { key:'dance',          label:'Dance or Zumba' },
+    { key:'martial',        label:'Boxing, kickboxing, or martial arts' },
+    { key:'climb',          label:'Rock climbing or bouldering' },
+    { key:'paddle',         label:'Paddleboard, kayak, or canoe' },
+    { key:'team_sport',     label:'Team sport (soccer, volleyball, softball)' },
+    { key:'mobility',       label:'Stretching, mobility, or recovery' },
+    { key:'other',          label:'Something else (type it in)' }
   ],
   bonus: { threeDays:2, fiveDays:5, stack:false },  // stack:false = highest tier only
   weeks: [
@@ -610,6 +663,7 @@ const app = (function(){
   let currentAdmin = null;
   let pendingPhoto = null;
   let pendingAppealPhoto = null;
+  let selectedDuration = 30;
 
   const dPath = 'gtc/'+CONFIG.monthKey+'/entries';
   const aPath = 'gtc/'+CONFIG.monthKey+'/appeals';
@@ -631,14 +685,20 @@ const app = (function(){
     $('b3').textContent = '+'+CONFIG.bonus.threeDays;
     $('b5').textContent = '+'+CONFIG.bonus.fiveDays;
 
-    // Points cards
-    $('ptsGrid').innerHTML = CONFIG.activities.map(a=>
-      '<div class="pts-card"><div class="lab">'+esc(a.label)+'</div>'+
-      '<div class="pts-badge">'+a.points+'<span>'+(a.points===1?'pt':'pts')+'</span></div></div>').join('');
+    // Workout pick list chips (reference on the How it works section)
+    $('chipWrap').innerHTML = CONFIG.activities.map(a=>
+      '<span class="chip'+(a.key==='other'?' other':'')+'">'+esc(a.label.replace(/\s*\(.*\)/,''))+'</span>').join('');
 
-    // Activity select + default date
+    // Activity select (labels only, points come from duration)
     $('fActivity').innerHTML = CONFIG.activities.map(a=>
-      '<option value="'+a.key+'">'+esc(a.label)+'  &middot;  '+a.points+(a.points===1?' pt':' pts')+'</option>').join('');
+      '<option value="'+a.key+'">'+esc(a.label)+'</option>').join('');
+
+    // Duration toggle
+    selectedDuration = CONFIG.durations[0].minutes;
+    $('durToggle').innerHTML = CONFIG.durations.map(d=>
+      '<div class="dur-opt'+(d.minutes===selectedDuration?' on':'')+'" data-min="'+d.minutes+'" onclick="app.pickDuration('+d.minutes+')">'+
+      '<div class="dm">'+d.label+'</div><div class="dp">'+d.points+(d.points===1?' point':' points')+'</div></div>').join('');
+
     const today = new Date();
     $('fDate').value = fmtDate(today);
     $('fDate').min = CONFIG.startDate; $('fDate').max = CONFIG.endDate;
@@ -993,16 +1053,32 @@ const app = (function(){
     else { ap.id='local-ap-'+Date.now(); appeals.push(ap); persistAppeals(); done(); }
   }
 
+  function pickDuration(min){
+    selectedDuration=min;
+    Array.from($('durToggle').children).forEach(c=>c.classList.toggle('on', parseInt(c.dataset.min,10)===min));
+  }
+  function onActivityChange(){
+    const isOther=$('fActivity').value==='other';
+    $('fOtherWrap').style.display=isOther?'block':'none';
+  }
+
   function logActivity(){
     if(!me.key){ toast('Join first, on the left','bad'); $('youPanel').scrollIntoView({behavior:'smooth'}); return; }
     const key=$('fActivity').value;
     const act=CONFIG.activities.find(a=>a.key===key);
+    let label=act?act.label:key;
+    if(key==='other'){
+      const custom=$('fOther').value.trim();
+      if(!custom){ toast('Type what you did','bad'); return; }
+      label=custom;
+    }
+    const dur=CONFIG.durations.find(d=>d.minutes===selectedDuration)||CONFIG.durations[0];
     const date=$('fDate').value;
     if(!date){ toast('Pick a date','bad'); return; }
     if(date<CONFIG.startDate||date>CONFIG.endDate){ toast('Date must be within the challenge window','bad'); return; }
     const entry={
       name:me.name, email:me.email, key:me.key,
-      activity:key, points:act.points, date:date,
+      activity:key, label:label, minutes:dur.minutes, points:dur.points, date:date,
       note:$('fNote').value.trim()||null, photo:pendingPhoto||null,
       createdAt:Date.now()
     };
@@ -1017,7 +1093,8 @@ const app = (function(){
   }
   function afterLog(){
     $('logBtn').disabled=false;
-    $('fNote').value=''; clearPhoto();
+    $('fNote').value=''; $('fOther').value=''; $('fActivity').value=CONFIG.activities[0].key; onActivityChange();
+    clearPhoto();
     toast('Logged. Nice work!','good');
     renderYou();
   }
@@ -1168,6 +1245,7 @@ const app = (function(){
   function closeIos(){ $('iosSheet').classList.remove('open'); }
 
   return { init, join, signOut, logActivity, clearPhoto, removeEntry, refresh, playRace,
+           pickDuration, onActivityChange,
            openAppeal, clearAppealPhoto, submitAppeal,
            openAdmin, closeModal, checkAdmin, adminRemove, exportCsv,
            approveAppeal, denyAppeal,
